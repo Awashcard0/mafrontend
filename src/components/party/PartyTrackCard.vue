@@ -31,7 +31,12 @@
     </div>
     <!-- Progress bar for current playing track -->
     <div
-      v-if="position === 'current' && isPlaying && progressPercentage > 0 && showProgressBar"
+      v-if="
+        position === 'current' &&
+        isPlaying &&
+        progressPercentage > 0 &&
+        showProgressBar
+      "
       class="progress-bar"
     >
       <div
@@ -89,7 +94,7 @@ let rafId: number | null = null;
 let fallbackTimer: ReturnType<typeof setInterval> | null = null;
 
 const startTick = () => {
-  if (!showProgressBar) return;
+  if (!showProgressBar.value) return;
 
   if (rafId === null) {
     const tick = () => {
