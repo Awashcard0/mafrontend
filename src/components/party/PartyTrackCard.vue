@@ -31,12 +31,12 @@
     </div>
     <!-- Progress bar for current playing track -->
     <div
-      v-if="position === 'current' && isPlaying && progressPercentage > 0"
+      v-if="position === 'current' && isPlaying && progressPercentage > 0 && showProgressBar"
       class="progress-bar"
     >
       <div
         class="progress-fill"
-        :style="{ width: `${progressPercentage}%` }"
+        :style="{ '--progress-scale': progressPercentage / 100 }"
       ></div>
     </div>
     <!-- Guest request badge -->
@@ -57,11 +57,14 @@ import { computed, ref, onMounted, onUnmounted, watch } from "vue";
 import MediaItemThumb from "@/components/MediaItemThumb.vue";
 import MarqueeText from "@/components/MarqueeText.vue";
 import NowPlayingBadge from "@/components/NowPlayingBadge.vue";
+import { usePartyConfig } from "@/composables/usePartyConfig";
 import type { QueueItem } from "@/plugins/api/interfaces";
 import { $t } from "@/plugins/i18n";
 import { Rocket, UserRound } from "lucide-vue-next";
 import { store } from "@/plugins/store";
 import computeElapsedTime from "@/helpers/elapsed";
+
+const { config: partyConfig } = usePartyConfig();
 
 export interface Props {
   queueItem?: QueueItem;
@@ -86,6 +89,8 @@ let rafId: number | null = null;
 let fallbackTimer: ReturnType<typeof setInterval> | null = null;
 
 const startTick = () => {
+  if (!showProgressBar) return;
+
   if (rafId === null) {
     const tick = () => {
       const now = Date.now();
@@ -202,6 +207,10 @@ const sizeClass = computed(() => {
   return props.position === "current" ? "size-large" : "size-medium";
 });
 
+const showProgressBar = computed(
+  () => partyConfig.value?.show_progress_bar ?? false,
+);
+
 // Progress percentage for the visual ticker (only for current track)
 const progressPercentage = computed(() => {
   // Include nowTick.value so this computed re-evaluates periodically while mounted
@@ -257,6 +266,7 @@ watch(
   backdrop-filter: blur(1vh);
   width: 95%;
   box-sizing: border-box;
+  overflow: hidden;
   transform: scale(var(--scale, 1));
   opacity: var(--opacity, 1);
   z-index: var(--z-index, 1);
@@ -410,22 +420,23 @@ watch(
 
 .progress-bar {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: 0.6vh;
   overflow: hidden;
-  border-radius: 1.2vh;
   /* Make sure it sits behind the content */
   z-index: -1;
 }
 
 .progress-fill {
   height: 100%;
-  background: rgba(var(--v-theme-primary), 0.2);
-  border-top-left-radius: 1.2vh;
+  background: rgb(var(--v-theme-primary));
   border-bottom-left-radius: 1.2vh;
-  transition: width 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: left center;
+  transform: scaleX(var(--progress-scale, 0));
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 @media (max-width: 768px) {
